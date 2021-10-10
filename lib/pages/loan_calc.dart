@@ -36,13 +36,12 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
   double months = 0;
 
   double convertToDouble(String s) {
-    return double.parse(
-        s.replaceAll(",", '.').replaceAll("-", "replace").replaceAll(" ", ""));
+    return double.parse(s.replaceAll(",", '.').replaceAll("-", "replace").replaceAll(" ", ""));
   }
 
   int calculate(double amount, double percent, double months) {
     double monthPercent = percent / 1200;
-    double koef = monthPercent/(1 - pow(1 + monthPercent, -1 * months));
+    double koef = monthPercent / (1 - pow(1 + monthPercent, -1 * months));
     return (amount * koef).round();
   }
 
@@ -56,10 +55,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
           child: TextFormField(
             controller: amountController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-              FilteringTextInputFormatter.deny("..")
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Վարկի գումարը։',
@@ -71,10 +67,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
           child: TextFormField(
             controller: percentController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-              FilteringTextInputFormatter.deny("..")
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Վարկավորման տոկոսադրույքը։',
@@ -86,10 +79,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
           child: TextFormField(
             controller: monthsController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-              FilteringTextInputFormatter.deny("..")
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Քանի ամսում է մարվելու վարկը։',
@@ -109,6 +99,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
                 months = convertToDouble(monthsController.text);
 
                 result = calculate(amount, percent, months);
+                FocusScope.of(context).unfocus();
               });
             },
             child: const Text('Հաշվել'),

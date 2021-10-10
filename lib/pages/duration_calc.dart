@@ -32,28 +32,41 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
     super.dispose();
   }
 
-  int result = 0;
+  String result = "Վարկը կմարվի 0 տարի 0 ամիս անց";
   double amount = 0;
   double percent = 0;
   double eachMonthPayment = 0;
   double incomeTax = 0;
   bool isIncomeTaxEnabled = false;
 
+  String info = "Հաշվարկը դեռ կատարված չէ";
+
   double convertToDouble(String s) {
-    return double.parse(
-        s.replaceAll(",", '.').replaceAll("-", "replace").replaceAll(" ", ""));
+    return double.parse(s.replaceAll(",", '.').replaceAll("-", "replace").replaceAll(" ", ""));
   }
 
-  int calculate(double amount, double percent, double eachMonthPayment,
-      double incomeTax) {
+  void calculate(double amount, double percent, double eachMonthPayment, double incomeTax) {
+    if (eachMonthPayment <= amount * percent / 1200) {
+      setState(() {
+        result = "\t Տվյալ ամսեվճարով վարկը հնարավոր չէ մարել";
+        info = "\t Ամսեվճարը պետք է գերազանցի ամսվա բանկային տոկոսների վճարը";
+      });
+      return;
+    }
+
     int counter = 0;
     double eachMonthBankBill;
     double diff;
 
+    double sumBankBill = 0;
+    double userPayedBankBill = 0;
+
     while (amount > 0) {
       eachMonthBankBill = amount * percent / 1200;
+      sumBankBill += eachMonthBankBill;
       if (eachMonthBankBill > incomeTax) {
         diff = eachMonthPayment - (eachMonthBankBill - incomeTax);
+        userPayedBankBill += eachMonthBankBill - incomeTax;
       } else {
         diff = eachMonthPayment;
       }
@@ -61,7 +74,13 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
       counter++;
     }
 
-    return counter;
+    setState(() => {
+          result = "Վարկը կմարվի ${counter ~/ 12} տարի ${counter % 12} ամիս անց",
+          info = "\t Ամսեկան $eachMonthPayment վճարելով վարկը կմարվի ${counter ~/ 12} տարի, ${counter % 12} ամիս անց \t\n\n",
+          info += "\t Ընդհանուր տոկոսների համար վճարվելու է: $sumBankBill \t\n",
+          info += "\t Որից դուք վճարելու եք: $userPayedBankBill \t\n",
+          info += "\t Որից պետությունը կվճարի: ${sumBankBill - userPayedBankBill} \t"
+        });
   }
 
   @override
@@ -74,10 +93,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
           child: TextFormField(
             controller: amountController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-              FilteringTextInputFormatter.deny("..")
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Վարկի մնացորդը։',
@@ -89,10 +105,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
           child: TextFormField(
             controller: percentController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-              FilteringTextInputFormatter.deny("..")
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Վարկավորման տոկոսադրույքը։',
@@ -104,10 +117,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
           child: TextFormField(
             controller: eachMonthPaymentController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-              FilteringTextInputFormatter.deny("..")
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Որքան եք վճարելու ամսեկան։',
@@ -131,10 +141,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
             child: TextFormField(
               controller: incomeTaxController,
               keyboardType: const TextInputType.numberWithOptions(signed: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')),
-                FilteringTextInputFormatter.deny("..")
-              ],
+              inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
               decoration: const InputDecoration(
                 border: UnderlineInputBorder(),
                 labelText: 'Եկամտահարկի գումարը։',
@@ -152,17 +159,31 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
               setState(() {
                 amount = convertToDouble(amountController.text);
                 percent = convertToDouble(percentController.text);
-                eachMonthPayment =
-                    convertToDouble(eachMonthPaymentController.text);
+                eachMonthPayment = convertToDouble(eachMonthPaymentController.text);
                 incomeTax = isIncomeTaxEnabled ? convertToDouble(incomeTaxController.text) : 0;
-                result =
-                    calculate(amount, percent, eachMonthPayment, incomeTax);
+                calculate(amount, percent, eachMonthPayment, incomeTax);
+                FocusScope.of(context).unfocus();
               });
             },
             child: const Text('Հաշվել'),
           ),
         ),
-        Text("Վարկը կմարվի ${result ~/ 12} տարի ${result % 12} ամիս անց")
+        Text(result),
+        Padding(
+          padding: const EdgeInsets.all(40),
+          child: IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => showDialog<String>(
+              context: context,
+              builder: (BuildContext context) => SimpleDialog(children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text(info),
+                )
+              ]),
+            ),
+          ),
+        ),
       ],
     );
   }
