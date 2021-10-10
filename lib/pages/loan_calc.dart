@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'dart:math';
+
+import 'package:pattern_formatter/numeric_formatter.dart';
+import 'package:vark_calc/utils/formatters/percentage_formatter.dart';
+import 'package:vark_calc/utils/converter.dart';
 
 class LoanCalcForm extends StatefulWidget {
   const LoanCalcForm({Key? key}) : super(key: key);
@@ -35,10 +40,6 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
   double percent = 0;
   double months = 0;
 
-  double convertToDouble(String s) {
-    return double.parse(s.replaceAll(",", '.').replaceAll("-", "replace").replaceAll(" ", ""));
-  }
-
   int calculate(double amount, double percent, double months) {
     double monthPercent = percent / 1200;
     double koef = monthPercent / (1 - pow(1 + monthPercent, -1 * months));
@@ -55,7 +56,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
           child: TextFormField(
             controller: amountController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
+            inputFormatters: [ThousandsFormatter()],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Վարկի գումարը։',
@@ -67,8 +68,9 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
           child: TextFormField(
             controller: percentController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny(".."), PercentageFormatter()],
             decoration: const InputDecoration(
+              suffix: Text("%"),
               border: UnderlineInputBorder(),
               labelText: 'Վարկավորման տոկոսադրույքը։',
             ),
@@ -79,6 +81,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
           child: TextFormField(
             controller: monthsController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
+            maxLength: 3,
             inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
@@ -94,9 +97,9 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
             ),
             onPressed: () {
               setState(() {
-                amount = convertToDouble(amountController.text);
-                percent = convertToDouble(percentController.text);
-                months = convertToDouble(monthsController.text);
+                amount = Converter.toDouble(amountController.text);
+                percent = Converter.toDouble(percentController.text);
+                months = Converter.toDouble(monthsController.text);
 
                 result = calculate(amount, percent, months);
                 FocusScope.of(context).unfocus();
@@ -105,7 +108,7 @@ class _LoanCalcFormState extends State<LoanCalcForm> {
             child: const Text('Հաշվել'),
           ),
         ),
-        Text("Ամենամսյա գումարը։ $result"),
+        Text("Ամենամսյա գումարը։ ${NumberFormat.decimalPattern().format(result)}"),
       ],
     );
   }

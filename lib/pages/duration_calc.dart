@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:pattern_formatter/pattern_formatter.dart';
+import 'package:vark_calc/utils/converter.dart';
+import 'package:vark_calc/utils/formatters/percentage_formatter.dart';
 
 class DurationCalcForm extends StatefulWidget {
   const DurationCalcForm({Key? key}) : super(key: key);
@@ -33,17 +37,12 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
   }
 
   String result = "Վարկը կմարվի 0 տարի 0 ամիս անց";
+  String info = "Հաշվարկը դեռ կատարված չէ";
   double amount = 0;
   double percent = 0;
   double eachMonthPayment = 0;
   double incomeTax = 0;
   bool isIncomeTaxEnabled = false;
-
-  String info = "Հաշվարկը դեռ կատարված չէ";
-
-  double convertToDouble(String s) {
-    return double.parse(s.replaceAll(",", '.').replaceAll("-", "replace").replaceAll(" ", ""));
-  }
 
   void calculate(double amount, double percent, double eachMonthPayment, double incomeTax) {
     if (eachMonthPayment <= amount * percent / 1200) {
@@ -76,10 +75,11 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
 
     setState(() => {
           result = "Վարկը կմարվի ${counter ~/ 12} տարի ${counter % 12} ամիս անց",
-          info = "\t Ամսեկան $eachMonthPayment վճարելով վարկը կմարվի ${counter ~/ 12} տարի, ${counter % 12} ամիս անց \t\n\n",
-          info += "\t Ընդհանուր տոկոսների համար վճարվելու է: $sumBankBill \t\n",
-          info += "\t Որից դուք վճարելու եք: $userPayedBankBill \t\n",
-          info += "\t Որից պետությունը կվճարի: ${sumBankBill - userPayedBankBill} \t"
+          info = "\t Ամսեկան ${NumberFormat.decimalPattern().format(eachMonthPayment)} վճարելով վարկը կմարվի ${counter ~/ 12} տարի, "
+              "${counter % 12} ամիս անց \t\n\n",
+          info += "\t Ընդհանուր տոկոսների համար վճարվելու է: ${NumberFormat.decimalPattern().format(sumBankBill.round())} \t\n",
+          info += "\t Որից դուք վճարելու եք: ${NumberFormat.decimalPattern().format(userPayedBankBill.round())} \t\n",
+          info += "\t Որից պետությունը կվճարի: ${NumberFormat.decimalPattern().format((sumBankBill - userPayedBankBill).round())} \t"
         });
   }
 
@@ -93,7 +93,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
           child: TextFormField(
             controller: amountController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
+            inputFormatters: [ThousandsFormatter(allowFraction: true)],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Վարկի մնացորդը։',
@@ -105,8 +105,9 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
           child: TextFormField(
             controller: percentController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny(".."), PercentageFormatter()],
             decoration: const InputDecoration(
+              suffix: Text("%"),
               border: UnderlineInputBorder(),
               labelText: 'Վարկավորման տոկոսադրույքը։',
             ),
@@ -117,7 +118,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
           child: TextFormField(
             controller: eachMonthPaymentController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
+            inputFormatters: [ThousandsFormatter(allowFraction: true)],
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
               labelText: 'Որքան եք վճարելու ամսեկան։',
@@ -141,7 +142,7 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
             child: TextFormField(
               controller: incomeTaxController,
               keyboardType: const TextInputType.numberWithOptions(signed: true),
-              inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[^0-9.]+')), FilteringTextInputFormatter.deny("..")],
+              inputFormatters: [ThousandsFormatter(allowFraction: true)],
               decoration: const InputDecoration(
                 border: UnderlineInputBorder(),
                 labelText: 'Եկամտահարկի գումարը։',
@@ -157,10 +158,10 @@ class _DurationCalcFormState extends State<DurationCalcForm> {
             ),
             onPressed: () {
               setState(() {
-                amount = convertToDouble(amountController.text);
-                percent = convertToDouble(percentController.text);
-                eachMonthPayment = convertToDouble(eachMonthPaymentController.text);
-                incomeTax = isIncomeTaxEnabled ? convertToDouble(incomeTaxController.text) : 0;
+                amount = Converter.toDouble(amountController.text);
+                percent = Converter.toDouble(percentController.text);
+                eachMonthPayment = Converter.toDouble(eachMonthPaymentController.text);
+                incomeTax = isIncomeTaxEnabled ? Converter.toDouble(incomeTaxController.text) : 0;
                 calculate(amount, percent, eachMonthPayment, incomeTax);
                 FocusScope.of(context).unfocus();
               });
